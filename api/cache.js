@@ -3,13 +3,13 @@ var router=express.Router();
 var redis=require("redis");
 var redisClient=redis.createClient();
 var uniqid=require("uniqid");
-
+redisClient.on("error", err=>{
+    console.log(err);
+})
 
 router.post("/set", (req, res)=>{
     const hash=uniqid();
     const data=req.body.data;
-
-    console.log(data);
 
     redisClient.SET(hash, JSON.stringify(data), (err, reply)=>{
         if(err){

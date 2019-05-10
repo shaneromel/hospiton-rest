@@ -24,12 +24,11 @@ require("../utils/mongodb").then(db=>{
 
     });
 
-    router.get("/get/:id", (req, res)=>{
-        const id=req.params.id;
+    router.get("/get/:uid", (req, res)=>{
+        const uid=req.params.uid;
 
-        doctorsCollection.findOne({_id:new mongo.ObjectID(id)}, (err, docs)=>{
+        doctorsCollection.findOne({uid:uid}, (err, docs)=>{
             if(err){
-                console.log(err);
                 res.send(err);
                 return;
             }
@@ -57,8 +56,8 @@ require("../utils/mongodb").then(db=>{
     });
 
     router.post("/viewed", (req, res)=>{
-        const doctorid=req.body.doctor_id;
-        doctorsCollection.updateOne({_id:new mongo.ObjectID(doctorid)}, {$inc:{views:1}}, (err, result)=>{
+        const doctorUid=req.body.uid;
+        doctorsCollection.updateOne({uid:doctorUid}, {$inc:{views:1}}, (err, result)=>{
             if(err){
                 res.send(err);
                 return;
@@ -82,7 +81,7 @@ require("../utils/mongodb").then(db=>{
 
         })
 
-    });
+    })
 
 }).catch(err=>{
     console.log(err);

@@ -5,8 +5,8 @@ var mongo = require('mongodb');
 require("../utils/mongodb").then(db=>{
     const appointmentCollection=db.collection("appointments");
 
-    router.get("/get/:doctor_id", (req, res)=>{
-        const doctorId=req.params.doctor_id;
+    router.get("/by-doctor/:doctor_uid", (req, res)=>{
+        const uid=req.params.doctor_uid;
 
         // appointmentCollection.find({doctor_id:new mongo.ObjectID(doctorId)}, (err, docs)=>{
         //     if(err){
@@ -18,24 +18,39 @@ require("../utils/mongodb").then(db=>{
 
         // })
 
-        appointmentCollection.find({doctor_id:new mongo.ObjectID(doctorId)}).toArray((err, docs)=>{
+        appointmentCollection.find({doctor_uid:uid}).toArray((err, docs)=>{
             if(err){
-                res.send(err);
+                res.send({code:"error", message:err.message});
                 return;
             }
 
-            res.send(docs);
+            res.send({code:"success", data:docs});
 
         })
 
     });
 
-    router.post("/post", (req, res)=>{
+    router.get("/by-user/:uid", (req, res)=>{
+        const uid=req.params.uid;
+
+        appointmentCollection.find({user_uid:uid}).toArray((err, docs)=>{
+            if(err){
+                res.send({code:"error", message:err.message});
+                return;
+            }
+
+            res.send({code:"success", data:docs});
+
+        })
+
+    })
+
+    router.post("/book", (req, res)=>{
         const appointment=req.body;
 
         appointmentCollection.insertOne(appointment, (err, result)=>{
             if(err){
-                res.send(err);
+                res.send({code:"error", message:err.message});
                 return;
             }
 
@@ -44,6 +59,21 @@ require("../utils/mongodb").then(db=>{
         })
 
     });
+
+    router.delete("/cancel/:id", (req, res)=>{
+        const id=req.params.id;
+
+        appointmentCollection.deleteOne({_id:new mongo.ObjectID(id)}, (err, result)=>{
+            if(err){
+                res.send({code:"error", message:err.message});
+                return
+            }
+
+            res.send({code:"success"});
+
+        })
+
+    })
 
 }).catch(err=>{
     console.log(err);

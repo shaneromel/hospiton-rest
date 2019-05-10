@@ -6,13 +6,13 @@ require("../utils/mongodb").then(db=>{
 
     const feedBackCollection=db.collection("doctor_feedback");
 
-    router.get("/get/:doctor_id", (req, res)=>{
+    router.get("/get/:uid", (req, res)=>{
 
-        const doctorId=req.params.doctor_id;
+        const uid=req.params.uid;
         const limit=parseInt(req.query.limit);
         const offset=parseInt(req.query.offset);
 
-        feedBackCollection.find({doctor_id:new mongo.ObjectID(doctorId)}, {limit:limit, skip:offset}).toArray((err, docs)=>{
+        feedBackCollection.find({doctor_uid:uid}, {limit:limit, skip:offset}).toArray((err, docs)=>{
             if(err){
                 res.send(err);
                 return;

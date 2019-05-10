@@ -15,5 +15,7 @@ app.use("/appointments", require("./api/appointments"));
 app.use("/feedback", require("./api/doctor_feedback"));
 app.use("/collections", require("./api/collections"));
 app.use("/cache", require("./api/cache"));
+app.use("/auth", require("./api/auth"));
+app.use("/users", require("./api/users"));
 
 app.listen(3000)
