@@ -17,5 +17,6 @@ app.use("/collections", require("./api/collections"));
 app.use("/cache", require("./api/cache"));
 app.use("/auth", require("./api/auth"));
 app.use("/users", require("./api/users"));
+app.use("/chat", require("./api/chat"));
 
 app.listen(3000)
