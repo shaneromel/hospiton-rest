@@ -1,2 +1,8 @@
 var redis=require("redis");
-module.exports=redis.createClient();
+var redisClient=redis.createClient();
+
+redisClient.on("error", err=>{
+    console.log(err);
+})
+
+module.exports=redisClient;

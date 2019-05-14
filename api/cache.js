@@ -1,11 +1,7 @@
 var express=require("express");
 var router=express.Router();
-var redis=require("redis");
-var redisClient=redis.createClient();
+var redisClient=require("../utils/redis");
 var uniqid=require("uniqid");
-redisClient.on("error", err=>{
-    console.log(err);
-})
 
 router.post("/set", (req, res)=>{
     const hash=uniqid();
