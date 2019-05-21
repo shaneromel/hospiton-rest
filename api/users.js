@@ -54,6 +54,20 @@ require("../utils/mongodb").then(db=>{
 
         })
 
+    });
+
+    router.post("/update/:uid", (req, res)=>{
+        const uid=req.params.uid;
+
+        userCollection.updateOne({uid:uid}, {$set:req.body}, (err, result)=>{
+            if(err){
+                res.send({code:"error", message:err.message});
+                return;
+            }
+
+            res.send({code:"success"});
+
+        })
     })
 
 });

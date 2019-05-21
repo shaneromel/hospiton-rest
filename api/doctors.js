@@ -1,6 +1,6 @@
 var express=require("express");
 var router=express.Router();
-var mongo = require('mongodb');
+var rds=require("../utils/rds");
 
 require("../utils/mongodb").then(db=>{
 
@@ -11,7 +11,7 @@ require("../utils/mongodb").then(db=>{
         const limit=parseInt(req.query.limit);
         const offset=parseInt(req.query.offset);
 
-        doctorsCollection.find({}, {limit:limit, skip:offset}).toArray((err, docs)=>{
+        doctorsCollection.find({is_active:true}, {limit:limit, skip:offset}).toArray((err, docs)=>{
             if(err){
                 console.log(err);
                 res.send(err);
@@ -66,22 +66,7 @@ require("../utils/mongodb").then(db=>{
             res.send({code:"success"});
 
         })
-    })
-
-    router.post("/add", (req, res)=>{
-        const doctor=req.body;
-
-        doctorsCollection.insertOne(doctor,(err, result)=>{
-            if(err){
-                res.send(err);
-                return;
-            }
-
-            res.send({code:"success"});
-
-        })
-
-    })
+    });
 
 }).catch(err=>{
     console.log(err);

@@ -12,8 +12,11 @@
     "cors": "^2.8.5",
     "dotenv": "^7.0.0",
     "express": "^4.16.4",
+    "formidable": "^1.2.1",
     "mongodb": "^3.2.2",
+    "mysql": "^2.17.1",
     "redis": "^2.8.0",
+    "save-file": "^2.3.1",
     "uniqid": "^5.0.3"
   }
 }
