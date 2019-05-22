@@ -73,6 +73,21 @@ require("../utils/mongodb").then(db=>{
 
         })
 
+    });
+
+    router.post("/confirm", (req, res)=>{
+        const id=req.body.id;
+
+        appointmentCollection.updateOne({_id:mongo.ObjectId(id)}, {$set:{is_confirmed:true}}, (err, result)=>{
+            if(err){
+                res.send({code:"error", message:err.message});
+                return;
+            }
+
+            res.send({code:"success"});
+
+        })
+        
     })
 
 }).catch(err=>{
