@@ -21,5 +21,6 @@ app.use("/users", require("./api/users"));
 app.use("/chat", require("./api/chat"));
 app.use("/common", require("./api/common"));
 app.use("/orders", require("./api/orders"));
+app.use("/patients", require("./api/patients"));
 
 app.listen(3000)
