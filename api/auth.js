@@ -15,7 +15,7 @@ require("../utils/mongodb").then(db=>{
                 return;
             }
 
-            rds.query("INSERT INTO users (uid, type) VALUES (?,?)", [doctor.uid, "patient"], (err, result, fields)=>{
+            rds.query("INSERT INTO users (uid, type) VALUES (?,?)", [user.uid, "patient"], (err, result, fields)=>{
                 if(err){
                     res.send({code:"error", message:err.message});
                     return;
@@ -46,6 +46,25 @@ require("../utils/mongodb").then(db=>{
                 res.send({code:"success"});
 
             })
+
+        })
+
+    })
+
+    router.get("/is-new/:uid", (req, res)=>{
+        const uid=req.params.uid;
+
+        doctorsCollection.find({uid:uid}).toArray((err, results)=>{
+            if(err){
+                res.send({code:"error", message:err.message});
+                return;
+            }
+
+            if(results.length>0){
+                res.send({code:"success", is_new:false})
+            }else{
+                res.send({code:"success", is_new:true});
+            }
 
         })
 

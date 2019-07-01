@@ -11,6 +11,18 @@ require("../utils/mongodb").then(db=>{
         })
 
     })
+
+    router.get("/doctor-search-count/:search", (req, res)=>{
+        const search=req.params.search;
+
+        db.collection("doctors").countDocuments({$text:{$search:search}}).then(count=>{
+            res.send({code:"success", count:count});
+        }).catch(err=>{
+            res.send({code:"error", message:err});
+        })
+
+    })
+
 })
 
 module.exports=router;

@@ -14,15 +14,37 @@ require("../utils/mongodb").then(db=>{
         const lng=parseFloat(req.query.lng);
 
         if(lat&&lng){
-            doctorsCollection.aggregate([
+            let aggregates=[
                 {
                     $geoNear:{
                         sperical:true,
                         distanceField:"dist.calculated",
                         near:{type:"Point", coordinates:[lat, lng]}
                     }
+                },
+                {
+                    $match:{is_active:true}
                 }
-            ]).toArray((err, results)=>{
+            ];
+
+            if(limit&&offset){
+                aggregates.push({
+                    $limit:limit
+                },
+                {
+                    $skip:offset
+                })
+            }else if(limit && !offset){
+                aggregates.push({
+                    $limit:limit
+                });
+            }else if(offset && !limit){
+                aggregates.push({
+                    $skip:offset
+                });
+            }
+
+            doctorsCollection.aggregate(aggregates).toArray((err, results)=>{
                 if(err){
                     res.send({code:"error", message:err.message});
                     return;
@@ -78,7 +100,7 @@ require("../utils/mongodb").then(db=>{
     });
 
     router.post("/viewed", (req, res)=>{
-        const doctorUid=req.body.uid;
+        const doctorUid=req.body.doctor_id;
         doctorsCollection.updateOne({uid:doctorUid}, {$inc:{views:1}}, (err, result)=>{
             if(err){
                 res.send(err);
