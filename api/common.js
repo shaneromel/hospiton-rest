@@ -55,7 +55,9 @@ require("../utils/mongodb").then(db=>{
         })
         
     });
-});
+}).catch(err=>{
+    console.log(err);
+})
 
 router.get("/type/:uid", (req, res)=>{
     const uid=req.params.uid;
