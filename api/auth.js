@@ -5,6 +5,7 @@ var rds=require("../utils/rds");
 require("../utils/mongodb").then(db=>{
     const usersCollection=db.collection("users");
     const doctorsCollection=db.collection("doctors");
+    const hospitalCollection=db.collection("hospital");
 
     router.post("/user", (req, res)=>{
         const user=req.body;
@@ -38,6 +39,29 @@ require("../utils/mongodb").then(db=>{
             }
 
             rds.query("INSERT INTO users (uid, type) VALUES (?,?)", [doctor.uid, "doctor"], (err, result, fields)=>{
+                if(err){
+                    res.send({code:"error", message:err.message});
+                    return;
+                }
+
+                res.send({code:"success"});
+
+            })
+
+        })
+
+    });
+    
+    router.post("/hospital", (req, res)=>{
+        const hostpital=req.body;
+
+        hospitalCollection.insertOne(hostpital, (err, result)=>{
+            if(err){
+                res.send({code:"error", message:err.message});
+                return;
+            }
+
+            rds.query("INSERT INTO users (uid, type) VALUES (?,?)", [doctor.uid, "hospital"], (err, result, fields)=>{
                 if(err){
                     res.send({code:"error", message:err.message});
                     return;

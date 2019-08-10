@@ -78,4 +78,16 @@ router.get("/type/:uid", (req, res)=>{
 
 })
 
+router.post("/fcm_key/:uid", (req, res)=>{
+    rds.query("UPDATE users SET fcm_key = ? WHERE uid = ?",  [req.body.fcm_key, req.params.uid], (err, result, fields)=>{
+        if(err){
+            res.send({code:"error", message:err.message});
+            return;
+        }
+
+        res.send({code:"success"});
+
+    })
+})
+
 module.exports=router;

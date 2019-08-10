@@ -22,6 +22,23 @@ require("../utils/mongodb").then(db=>{
 
         })
 
+    });
+
+    router.get("/hospital-doctor/:id", (req, res)=>{
+        const id=req.params.id;
+        const limit=parseInt(req.query.limit);
+        const offset=parseInt(req.query.offset);
+
+        feedBackCollection.find({doctor_id:mongo.ObjectID(id)}, {limit:limit, skip:offset}, (err, docs)=>{
+            if(err){
+                res.send({code:"error", message:err.message});
+                return;
+            }
+
+            res.send(docs);
+
+        })
+
     })
 
 }).catch(err=>{
