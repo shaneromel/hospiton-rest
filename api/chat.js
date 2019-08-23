@@ -53,7 +53,7 @@ require("../utils/mongodb").then(db=>{
 
             res.send(results);
 
-        })
+        });
     })
 
 }).catch(err=>{

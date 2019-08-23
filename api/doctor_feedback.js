@@ -39,7 +39,7 @@ require("../utils/mongodb").then(db=>{
 
         })
 
-    })
+    });
 
 }).catch(err=>{
     console.log(err);

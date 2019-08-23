@@ -1,12 +1,15 @@
 var express=require("express");
 var router=express.Router();
 var mongo=require("mongodb");
+var randomize = require('randomatic');
 
 require("../utils/mongodb").then(db=>{
 
     const hospitalCollection=db.collection("hospitals");
     const hospitalDoctorCollection=db.collection("hospital_doctors");
     const hospitalAppointmentCollection=db.collection("hospital_appointments");
+    const hospitalDoctorsLeaveCollection=db.collection("hospital_doctors_leave");
+    const hospitalChatCollection=db.collection("hospital_chats");
 
     router.get("/", (req, res)=>{
         const limit=parseInt(req.query.limit);
@@ -97,6 +100,143 @@ require("../utils/mongodb").then(db=>{
             }
 
             res.send(docs);
+
+        })
+    });
+
+    router.get("/count-today-appointments/:uid", (req, res)=>{
+        const start=new Date();
+        start.setHours(0);
+        start.setMinutes(0);
+        start.setSeconds(0);
+
+        const uid=req.params.uid;
+
+        const end=new Date();
+        end.setHours(23);
+        end.setMinutes(59);
+        end.setSeconds(59);
+
+        hospitalAppointmentCollection.aggregate([
+            {
+                $match:{
+                    timestamp:{
+                        $gte:start.getTime(),
+                        $lte:end.getTime()
+                    },
+                    hospital_uid:uid,
+                    is_complete:true
+                }
+            },
+            {
+                $count:"count"
+            }
+        ]).toArray((err, count)=>{
+            if(err){
+                res.send({code:"error", message:err.message});
+                return;
+            }
+
+            res.send({code:"success", count:count.length>0 ? count[0].count : 0});
+
+        })
+    });
+
+    router.get("/todays-pending-appointments/:uid", (req, res)=>{
+        const start=new Date();
+        start.setHours(0);
+        start.setMinutes(0);
+        start.setSeconds(0);
+
+        const uid=req.params.uid;
+
+        const end=new Date();
+        end.setHours(23);
+        end.setMinutes(59);
+        end.setSeconds(59);
+
+        hospitalAppointmentCollection.aggregate([
+            {
+                $match:{
+                    timestamp:{
+                        $gte:start.getTime(),
+                        $lte:end.getTime()
+                    },
+                    hospital_uid:uid,
+                    is_confirmed:false
+                }
+            },
+            {
+                $count:"count"
+            }
+        ]).toArray((err, count)=>{
+            if(err){
+                res.send({code:"error", message:err.message});
+                return;
+            }
+
+            res.send({code:"success", count:count.length>0 ? count[0].count : 0});
+
+        })
+    });
+
+    router.get("/appointment-by-range/:start/:end/:uid", (req, res)=>{
+        const start=new Date(parseInt(req.params.start));
+        const end=new Date(parseInt(req.params.end));
+        const {uid}=req.params;
+
+        hospitalAppointmentCollection.aggregate([
+            {
+                $match:{
+                    timestamp:{
+                        $lte:start.getTime(),
+                        $gte:end.getTime()
+                    },
+                    hospital_uid:uid,
+                    is_confirmed:true
+                }
+            },
+            {
+                $count:"count"
+            }
+        ]).toArray((err, count)=>{
+            if(err){
+                res.send({code:"error", message:err.message});
+                return;
+            }
+
+            res.send({code:"success", count:count.length>0 ? count[0].count : 0});
+
+        })
+    });
+
+    router.get("/pending-appointment-by-range/:start/:end/:uid", (req, res)=>{
+        const start=new Date(parseInt(req.params.start));
+        const end=new Date(parseInt(req.params.end));
+        const {uid}=req.params;
+        
+        hospitalAppointmentCollection.aggregate([
+            {
+                $match:{
+                    timestamp:{
+                        $lte:start.getTime(),
+                        $gte:end.getTime()
+                    },
+                    hospital_uid:uid,
+                    is_confirmed:false
+                }
+            },
+            {
+                $count:"count"
+            }
+        ]).toArray((err, count)=>{
+            if(err){
+                res.send({code:"error", message:err.message});
+                return;
+            }
+
+            console.log(count)
+            res.send({code:"success", count:count.length>0 ? count[0].count : 0});
 
         })
     });
@@ -220,8 +360,10 @@ require("../utils/mongodb").then(db=>{
 
             docs=docs.map(a=>{
                 a.user_details=a.user_details[0];
-                a.doctor_details=a.doctor_details[0];
-                a.doctor_details.image=a.doctor_details.photo;
+                if(a.doctor_details.length>0){
+                    a.doctor_details=a.doctor_details[0];
+                    a.doctor_details.image=a.doctor_details.photo;
+                }
                 delete a.doctor_details.photo;
                 return a;
             })
@@ -237,6 +379,7 @@ require("../utils/mongodb").then(db=>{
         data.timestamp=Date.now();
         data.doctor_id=mongo.ObjectID(data.doctor_id);
         data.is_cancelled=false;
+        data.appointment_id=randomize('0', 3);
 
         hospitalAppointmentCollection.insertOne(data, (err, result)=>{
             if(err){
@@ -306,6 +449,117 @@ require("../utils/mongodb").then(db=>{
             }
 
             res.send(docs);
+
+        })
+
+    })
+
+    router.post("/doctor-leave", (req, res)=>{
+        let data=req.body.map(a=>{
+            a.doctor_id=mongo.ObjectID(a.doctor_id);
+            return a;
+        });
+
+        data=data.filter(a=>!(a.morning && a.evening));
+
+        hospitalDoctorsLeaveCollection.insertMany(data, (err, result)=>{
+            if(err){
+                res.send({code:"error", message:err.message});
+                return;
+            }
+
+            res.send({code:"success"});
+
+        })
+
+    });
+
+    router.get("/doctor-leave/:id", (req, res)=>{
+        const id=mongo.ObjectID(req.params.id);
+
+        hospitalDoctorsLeaveCollection.find({doctor_id:id}).toArray((err, docs)=>{
+            if(err){
+                res.send({code:"error", message:err.message});
+                return;
+            }
+
+            res.send({code:"success", data:docs});
+
+        })
+
+    });
+    
+    router.get("/chat-users/:uid", (req, res)=>{
+        const uid=req.params.uid;
+
+        hospitalAppointmentCollection.aggregate([
+            {
+                $lookup:{
+                    from:"users",
+                    localField:"user_uid",
+                    foreignField:"uid",
+                    as:"user_details"
+                }
+            },
+            {
+                $match:{
+                    hospital_uid:uid
+                }
+            }
+        ]).toArray((err, docs)=>{
+            if(err){
+                res.send({code:"error", message:err.message});
+                return;
+            }
+
+            let data=docs.map(a=>a.user_details[0])
+            data=data.filter((a, i)=>{
+                return i===data.findIndex(obj=>{
+                    return obj.uid === a.uid;
+                })
+            })
+            res.send({code:"success", data:data});
+
+        })
+
+    });
+
+    router.get("/chat-history/:id1/:id2", (req, res)=>{
+        hospitalChatCollection.find({toId:req.params.toId, fromId:req.params.fromId}).toArray((err, docs)=>{
+            if(err){
+                res.send({code:"error", message:err.message});
+                return;
+            }
+
+            res.send({code:"success", data:docs});
+
+        })
+    });
+
+    router.delete("/gallery-image/:uid/:img", (req, res)=>{
+        const {uid}=req.params, {img}=req.params;
+        hospitalCollection.updateOne({uid:uid}, {$pull:{"details.gallery":img}}, (err, result)=>{
+            if(err){
+                res.send({code:"error", message:err.message});
+                return;
+            }
+
+            res.send({code:"success"});
+
+        })
+    });
+
+    router.post("/update-details/:uid", (req, res)=>{
+        const {uid}=req.params;
+        const data=req.body;
+
+        hospitalCollection.updateOne({uid:uid}, {$set:data}, (err, result)=>{
+            if(err){
+                res.send({code:"error", message:err.message});
+                return;
+            }
+
+            res.send({code:"success"});
 
         })
 
