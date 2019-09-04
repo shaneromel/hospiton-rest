@@ -126,6 +126,21 @@ require("../utils/mongodb").then(db=>{
 
         })
 
+    });
+
+    router.get("/by-speciality/:speciality", (req, res)=>{
+        const speciality=req.params.speciality;
+
+        doctorsCollection.find({speciality:speciality}).toArray((err, docs)=>{
+            if(err){
+                res.send({code:"error", message:err.message});
+                return;
+            }
+
+            res.send({code:"success", data:docs});
+
+        })
+
     })
 
 }).catch(err=>{

@@ -9,7 +9,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended:true}));
 
 app.get("/", (req, res)=>{
-    res.send({status:"OK", description:"Practo REST API"});
+    res.send({status:"OK", description:"Hospiton REST API"});
 });
 app.use("/doctors", require("./api/doctors"));
 app.use("/appointments", require("./api/appointments"));
@@ -22,5 +22,7 @@ app.use("/chat", require("./api/chat"));
 app.use("/common", require("./api/common"));
 app.use("/orders", require("./api/orders"));
 app.use("/patients", require("./api/patients"));
+app.use("/speciality", require("./api/specialities"));
+app.use("/hospital", require("./api/hospitals"));
 
 app.listen(3000)

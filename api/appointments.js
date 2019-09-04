@@ -78,8 +78,9 @@ require("../utils/mongodb").then(db=>{
 
     router.post("/confirm", (req, res)=>{
         const id=req.body.id;
+        const timestamp=req.body.timestamp;
 
-        appointmentCollection.updateOne({_id:mongo.ObjectId(id)}, {$set:{is_confirmed:true}}, (err, result)=>{
+        appointmentCollection.updateOne({_id:mongo.ObjectId(id)}, {$set:{is_confirmed:true, timestamp:timestamp}}, (err, result)=>{
             if(err){
                 res.send({code:"error", message:err.message});
                 return;
@@ -311,7 +312,9 @@ require("../utils/mongodb").then(db=>{
 
         })
 
-    })
+    });
+
+    
 
 }).catch(err=>{
     console.log(err);
