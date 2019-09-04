@@ -53,19 +53,44 @@ require("../utils/mongodb").then(db=>{
 
     router.get("/is-new/:uid", (req, res)=>{
         const uid=req.params.uid;
+        let promises=[];
 
-        doctorsCollection.find({uid:uid}).toArray((err, results)=>{
-            if(err){
-                res.send({code:"error", message:err.message});
-                return;
-            }
+        promises.push(new Promise((resolve, reject)=>{
+            doctorsCollection.countDocuments({uid:uid}, (err, result)=>{
+                if(err){
+                    reject(err);
+                    return;
+                }
+    
+                resolve(result);
+    
+            })
+        }), new Promise((resolve, reject)=>{
+            usersCollection.countDocuments({uid:uid}, (err, result)=>{
+                if(err){
+                    reject(err);
+                    return
+                }
 
-            if(results.length>0){
-                res.send({code:"success", is_new:false})
+                resolve(result)
+                
+            })
+        }));
+
+        Promise.all(promises).then(results=>{
+            let users=0;
+
+            results.forEach(a=>{
+                users=users+a;
+            })
+
+            if(users>0){
+                res.send({code:"success", is_new:false});
             }else{
                 res.send({code:"success", is_new:true});
             }
-
+        }).catch(err=>{
+            res.send({code:"error", message:err.message});
         })
 
     })
