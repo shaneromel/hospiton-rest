@@ -10,6 +10,7 @@ require("../utils/mongodb").then(db=>{
     const hospitalAppointmentCollection=db.collection("hospital_appointments");
     const hospitalDoctorsLeaveCollection=db.collection("hospital_doctors_leave");
     const hospitalChatCollection=db.collection("hospital_chats");
+    const hospitalViewsCollection=db.collection("hospital_views");
 
     router.get("/", (req, res)=>{
         const limit=parseInt(req.query.limit);
@@ -349,7 +350,8 @@ require("../utils/mongodb").then(db=>{
                     "doctor_details.photo":1,
                     doctor_id:1,
                     is_paid:1,
-                    is_cancelled:1
+                    is_cancelled:1,
+                    appointment_id:1
                 }
             }
         ]).toArray((err, docs)=>{
@@ -379,7 +381,7 @@ require("../utils/mongodb").then(db=>{
         data.timestamp=Date.now();
         data.doctor_id=mongo.ObjectID(data.doctor_id);
         data.is_cancelled=false;
-        data.appointment_id=randomize('0', 3);
+        data.appointment_id=randomize('0', 6);
 
         hospitalAppointmentCollection.insertOne(data, (err, result)=>{
             if(err){
@@ -565,6 +567,36 @@ require("../utils/mongodb").then(db=>{
 
     })
 
-})
+    router.get("/views/:uid", (req, res)=>{
+        const uid=req.params.uid;
+        const start=parseInt(req.query.start)
+        const end=parseInt(req.query.end);
+    
+        if(start&&end){
+            console.log(uid, req.query)
+            hospitalViewsCollection.find({hospital_uid:uid, timestamp:{$gte:start, $lte:end}}).toArray((err, docs)=>{
+                if(err){
+                    res.send({code:"error", message:err.message});
+                    return;
+                }
+        
+                res.send({code:"success", data:docs});
+        
+            })
+        }else{
+            hospitalViewsCollection.find({hospital_uid:uid}).toArray((err, docs)=>{
+                if(err){
+                    res.send({code:"error", message:err.message});
+                    return;
+                }
+        
+                res.send({code:"success", data:docs});
+        
+            })
+        }
+    
+    })
+
+});
 
 module.exports=router;
