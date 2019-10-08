@@ -5,6 +5,7 @@ var rds=require("../utils/rds");
 require("../utils/mongodb").then(db=>{
     const usersCollection=db.collection("users");
     const doctorsCollection=db.collection("doctors");
+    const hospitalCollection=db.collection("hospital");
 
     router.post("/user", (req, res)=>{
         const user=req.body;
@@ -49,23 +50,71 @@ require("../utils/mongodb").then(db=>{
 
         })
 
-    })
+    });
+    
+    router.post("/hospital", (req, res)=>{
+        const hostpital=req.body;
 
-    router.get("/is-new/:uid", (req, res)=>{
-        const uid=req.params.uid;
-
-        doctorsCollection.find({uid:uid}).toArray((err, results)=>{
+        hospitalCollection.insertOne(hostpital, (err, result)=>{
             if(err){
                 res.send({code:"error", message:err.message});
                 return;
             }
 
-            if(results.length>0){
-                res.send({code:"success", is_new:false})
+            rds.query("INSERT INTO users (uid, type) VALUES (?,?)", [doctor.uid, "hospital"], (err, result, fields)=>{
+                if(err){
+                    res.send({code:"error", message:err.message});
+                    return;
+                }
+
+                res.send({code:"success"});
+
+            })
+
+        })
+
+    })
+
+    router.get("/is-new/:uid", (req, res)=>{
+        const uid=req.params.uid;
+        let promises=[];
+
+        promises.push(new Promise((resolve, reject)=>{
+            doctorsCollection.countDocuments({uid:uid}, (err, result)=>{
+                if(err){
+                    reject(err);
+                    return;
+                }
+    
+                resolve(result);
+    
+            })
+        }), new Promise((resolve, reject)=>{
+            usersCollection.countDocuments({uid:uid}, (err, result)=>{
+                if(err){
+                    reject(err);
+                    return
+                }
+
+                resolve(result)
+                
+            })
+        }));
+
+        Promise.all(promises).then(results=>{
+            let users=0;
+
+            results.forEach(a=>{
+                users=users+a;
+            })
+
+            if(users>0){
+                res.send({code:"success", is_new:false});
             }else{
                 res.send({code:"success", is_new:true});
             }
-
+        }).catch(err=>{
+            res.send({code:"error", message:err.message});
         })
 
     })

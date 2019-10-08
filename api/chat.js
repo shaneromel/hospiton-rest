@@ -23,6 +23,7 @@ require("../utils/mongodb").then(db=>{
     const chatCollection=db.collection("chats");
     const doctorCollection=db.collection("doctors");
     const userCollection=db.collection("users");
+    const hospitalChatCollection=db.collection("hospital_chats");
 
     router.get("/history/:user1/:user2", (req, res)=>{
         const {user1}=req.params;
@@ -39,6 +40,21 @@ require("../utils/mongodb").then(db=>{
         })
 
     });
+
+    router.get("/hospital-chat-history/:user1/:user2", (req, res)=>{
+        const {user1}=req.params;
+        const {user2}=req.params;
+
+        hospitalChatCollection.find({toId:{$in:[user1, user2]}, fromId:{$in:[user1, user2]}}).toArray((err, results)=>{
+            if(err){
+                res.send([]);
+                return;
+            }
+
+            res.send(results);
+
+        });
+    })
 
 }).catch(err=>{
     console.log(err);
