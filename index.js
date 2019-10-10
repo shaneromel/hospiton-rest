@@ -25,5 +25,7 @@ app.use("/patients", require("./api/patients"));
 app.use("/speciality", require("./api/specialities"));
 app.use("/hospital", require("./api/hospitals"));
 app.use("/offline-appointments", require("./api/offline_appointments"));
+app.use("/wallet", require("./api/wallet"));
+app.use("/notification", require("./api/notification"));
 
 app.listen(3000)

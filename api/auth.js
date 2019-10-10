@@ -1,6 +1,7 @@
 var express=require("express");
 var router=express.Router();
 var rds=require("../utils/rds");
+var walletUtils=require("../utils/wallet");
 
 require("../utils/mongodb").then(db=>{
     const usersCollection=db.collection("users");
@@ -8,24 +9,31 @@ require("../utils/mongodb").then(db=>{
     const hospitalCollection=db.collection("hospital");
 
     router.post("/user", (req, res)=>{
-        const user=req.body;
+        let user=req.body;
 
-        usersCollection.insertOne(user, (err, result)=>{
-            if(err){
-                res.send({code:"error", message:err.message});
-                return;
-            }
+        walletUtils.createWallet().then(data=>{
+            user.wallet_id=data._id;
 
-            rds.query("INSERT INTO users (uid, type) VALUES (?,?)", [user.uid, "patient"], (err, result, fields)=>{
+            usersCollection.insertOne(user, (err, result)=>{
                 if(err){
                     res.send({code:"error", message:err.message});
                     return;
-                }
-
-                res.send({code:"success"});
-
+                };
+    
+                rds.query("INSERT INTO users (uid, type) VALUES (?,?)", [user.uid, "patient"], (err, result, fields)=>{
+                    if(err){
+                        res.send({code:"error", message:err.message});
+                        return;
+                    }
+    
+                    res.send({code:"success"});
+    
+                })
+    
             })
 
+        }).catch(err=>{
+            res.send({code:"error", message:err.message});
         })
     });
 

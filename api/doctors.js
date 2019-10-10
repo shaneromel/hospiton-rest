@@ -1,6 +1,8 @@
 var express=require("express");
 var router=express.Router();
 var rds=require("../utils/rds");
+var hospitalUtils=require("../utils/hospital");
+var doctorUtils=require("../utils/doctor");
 
 require("../utils/mongodb").then(db=>{
 
@@ -50,7 +52,27 @@ require("../utils/mongodb").then(db=>{
                     return;
                 }
 
-                res.send(results);
+                hospitalUtils.findNearby(lat, lng).then(docs=>{
+                    let promises=[];
+                    
+                    promises=docs.map(a=>{
+                        return doctorUtils.getDoctorsByHospital(a.uid);
+                    })
+    
+                    Promise.all(promises).then(doctors=>{
+                        doctors.forEach(d=>{
+                            results.push(...d);
+                        })
+
+                        res.send(results);
+
+                    }).catch(err=>{
+                        console.log(err);
+                    })
+    
+                }).catch(err=>{
+                    console.log(err);
+                })
 
             })
         }else{
@@ -87,8 +109,11 @@ require("../utils/mongodb").then(db=>{
 
         const limit=parseInt(req.query.limit);
         const offset=parseInt(req.query.offset);
+        const search=req.query.search;
 
-        doctorsCollection.find({$text:{$search:req.query.search}}, {limit:limit, skip:offset}).toArray((err, docs)=>{
+        let query={$text:{$search:search}};
+
+        doctorsCollection.find(query, {limit:limit, skip:offset}).toArray((err, docs)=>{
             if(err){
                 res.send(err);
                 return;
@@ -97,6 +122,7 @@ require("../utils/mongodb").then(db=>{
             res.send(docs);
 
         })
+
     });
 
     router.post("/viewed", (req, res)=>{
