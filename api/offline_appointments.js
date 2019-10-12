@@ -11,21 +11,54 @@ require("../utils/mongodb").then(db=>{
         const {uid}=req.params;
         const start=moment().startOf("day").toDate();
         const end=moment().endOf("day").toDate();
-        
-        offlineAppointmentCollection.find({hospital_uid:uid, timestamp:{$gte:start.getTime(), $lte:end.getTime()}}).sort({timestamp:1}).toArray((err, docs)=>{
+
+        const aggregates=[
+            {
+                $lookup:{
+                    from:"users",
+                    localField:"user_uid",
+                    foreignField:"uid",
+                    as:"user_details"
+                }
+            },
+            {
+                $match:{hospital_uid:uid, timestamp:{$gte:start.getTime(), $lte:end.getTime()}}
+            }
+        ];
+
+        offlineAppointmentCollection.aggregate(aggregates).sort({timestamp:1}).toArray((err, docs)=>{
             if(err){
                 res.send({code:"error", message:err.message});
                 return;
             }
+
+            docs=docs.map(a=>{
+                if(a.user_details){
+                    a.name=a.user_details[0].first + " " + a.user_details[0].last;
+                    delete a.user_details;
+                }
+                a.is_offline=a.is_offline ? "Offline" : "Online";
+                return a;
+            })
+
             res.send({code:"success", data:docs});
 
         })
+        
+        // offlineAppointmentCollection.find({hospital_uid:uid, timestamp:{$gte:start.getTime(), $lte:end.getTime()}}).sort({timestamp:1}).toArray((err, docs)=>{
+        //     if(err){
+        //         res.send({code:"error", message:err.message});
+        //         return;
+        //     }
+        //     res.send({code:"success", data:docs});
+
+        // })
     
     });
 
     router.post("/complete", (req,res)=>{
         const id=mongo.ObjectID(req.body._id);
-        console.log(req.body)
+
         offlineAppointmentCollection.updateOne({_id:id}, {$set:{is_complete:true}}, (err, result)=>{
             if(err){
                 res.send({code:"error", message:err.message});
@@ -59,7 +92,7 @@ require("../utils/mongodb").then(db=>{
         const start=moment().startOf("day").toDate();
         const end=moment().endOf("day").toDate();
 
-        offlineAppointmentCollection.find({is_complete:true, hospital_uid:hospitalUid, timestamp:{$gte:start.getTime(), $lte:end.getTime()}}).toArray((err, docs)=>{
+        offlineAppointmentCollection.find({hospital_uid:hospitalUid, timestamp:{$gte:start.getTime(), $lte:end.getTime()}}).toArray((err, docs)=>{
             if(err){
                 res.send({code:"error", message:err.message});
                 return;
@@ -70,7 +103,7 @@ require("../utils/mongodb").then(db=>{
 
                 docs.forEach((a, i)=>{
                     if(uid===a.user_uid){
-                        pos=i;
+                        pos=i+1;
                     }
                 });
 

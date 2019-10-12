@@ -13,8 +13,9 @@ module.exports.sendNotificationByUid=(uid, payload)=>{
                 const token=result[0].fcm_key;
                 const message={
                     data:payload,
-                    token:"all"
-                }
+                    token:token
+                };
+
                 admin.messaging().send(message).then(()=>{
                     resolve();
                 }).catch(err=>{

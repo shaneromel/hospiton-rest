@@ -5,6 +5,7 @@ var mongo = require('mongodb');
 require("../utils/mongodb").then(db=>{
 
     const feedBackCollection=db.collection("doctor_feedback");
+    const doctorCollection=db.collection("doctors");
 
     router.get("/get/:uid", (req, res)=>{
 
@@ -130,6 +131,66 @@ require("../utils/mongodb").then(db=>{
         })
 
     });
+
+    router.post("/", (req, res)=>{
+        const feedback={
+            doctor_id:mongo.ObjectID(req.body.doctor_id),
+            user_uid:req.body.user_uid,
+            message:req.body.message,
+            rating:req.body.rating,
+            timestamp:Date.now()
+        }
+
+        feedBackCollection.insertOne(feedback, (err, result)=>{
+            if(err){
+                res.send({code:"error", message:err.message});
+                return;
+            }
+
+            doctorCollection.findOne({_id:feedback.doctor_id}, (err, doc)=>{
+                if(err){
+                    res.send({code:"error", message:err.message});
+                    return;
+                }
+
+                if(doc){
+                    if(doc.rating){
+                        const overallRating=parseFloat(doc.rating.split("|")[0]);
+                        const size=parseInt(doc.rating.split("|")[1]);
+
+                        const newAvg=(overallRating*size+feedback.rating)/(size+1);
+
+                        doctorCollection.updateOne({_id:feedback.doctor_id}, {$set:{rating:`${newAvg}|${size+1}`}}, (err, result)=>{
+                            if(err){
+                                res.send({code:"error", message:err.message});
+                                return;
+                            }
+
+                            res.send({code:"success"});
+
+                        })
+
+
+                    }else{
+                        doctorCollection.updateOne({_id:feedback.doctor_id}, {$set:{rating:`${feedback.rating}|1`}}, (err, result)=>{
+                            if(err){
+                                res.send({code:"error", message:err.message});
+                                return;
+                            }
+
+                            res.send({code:"success"});
+
+                        })
+                    }
+                }else{
+                    res.send({code:"error", message:"No such doctor exists"});
+                }
+
+            })
+
+        })
+
+    })
 
 }).catch(err=>{
     console.log(err);

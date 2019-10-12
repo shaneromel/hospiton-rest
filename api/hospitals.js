@@ -382,6 +382,8 @@ require("../utils/mongodb").then(db=>{
         data.doctor_id=mongo.ObjectID(data.doctor_id);
         data.is_cancelled=false;
         data.appointment_id=randomize('0', 6);
+        data.is_confirmed=false;
+        data.is_complete=false;
 
         hospitalAppointmentCollection.insertOne(data, (err, result)=>{
             if(err){
@@ -389,7 +391,7 @@ require("../utils/mongodb").then(db=>{
                 return;
             }
 
-            res.send({code:"success"});
+            res.send({code:"success", appointment_id:data.appointment_id});
 
         })
 

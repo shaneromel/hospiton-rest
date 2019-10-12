@@ -3,6 +3,7 @@ var router=express.Router();
 var rds=require("../utils/rds");
 var hospitalUtils=require("../utils/hospital");
 var doctorUtils=require("../utils/doctor");
+var mongo=require("mongodb");
 
 require("../utils/mongodb").then(db=>{
 
@@ -14,6 +15,7 @@ require("../utils/mongodb").then(db=>{
         const offset=parseInt(req.query.offset);
         const lat=parseFloat(req.query.lat);
         const lng=parseFloat(req.query.lng);
+        const speciality=req.query.speciality;
 
         if(lat&&lng){
             let aggregates=[
@@ -28,6 +30,10 @@ require("../utils/mongodb").then(db=>{
                     $match:{is_active:true}
                 }
             ];
+
+            if(speciality){
+                aggregates[1].$match.speciality=speciality;
+            }
 
             if(limit&&offset){
                 aggregates.push({
@@ -52,38 +58,51 @@ require("../utils/mongodb").then(db=>{
                     return;
                 }
 
-                hospitalUtils.findNearby(lat, lng).then(docs=>{
-                    let promises=[];
+                res.send({code:"success", data:results});
+
+                // hospitalUtils.findNearby(lat, lng).then(docs=>{
+                //     let promises=[];
                     
-                    promises=docs.map(a=>{
-                        return doctorUtils.getDoctorsByHospital(a.uid);
-                    })
+                //     promises=docs.map(a=>{
+                //         return doctorUtils.getDoctorsByHospital(a.uid);
+                //     })
     
-                    Promise.all(promises).then(doctors=>{
-                        doctors.forEach(d=>{
-                            results.push(...d);
-                        })
+                //     Promise.all(promises).then(doctors=>{
+                //         doctors.forEach(d=>{
+                //             results.push(...d);
+                //         })
 
-                        res.send(results);
+                //         res.send(results);
 
-                    }).catch(err=>{
-                        console.log(err);
-                    })
+                //     }).catch(err=>{
+                //         console.log(err);
+                //     })
     
-                }).catch(err=>{
-                    console.log(err);
-                })
+                // }).catch(err=>{
+                //     console.log(err);
+                // })
 
             })
         }else{
             doctorsCollection.find({is_active:true}, {limit:limit, skip:offset}).toArray((err, docs)=>{
                 if(err){
-                    console.log(err);
                     res.send(err);
                     return;
                 }
-    
-                res.send(docs);
+
+                res.send({code:"success", data:docs});
+
+                // hospitalUtils.findDoctors(limit, offset).then(hospitalDoctors=>{
+                //     let doctors=[];
+
+                //     doctors.push(...docs);
+                //     doctors.push(...hospitalDoctors);
+
+                //     res.send(doctors);
+
+                // }).catch(err=>{
+                //     res.send({code:"error", message:err.message});
+                // })
     
             })
         }
@@ -104,6 +123,21 @@ require("../utils/mongodb").then(db=>{
         })
         
     });
+    
+    router.get("/get-by-id/:id", (req, res)=>{
+        const id=mongo.ObjectID(req.params.id);
+
+        doctorsCollection.findOne({_id:id}, (err, doc)=>{
+            if(err){
+                res.send({code:"error", message:err.message});
+                return;
+            }
+
+            res.send({code:"success", data:doc});
+
+        })
+
+    })
 
     router.get("/search", (req, res)=>{
 

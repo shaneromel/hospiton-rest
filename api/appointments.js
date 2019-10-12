@@ -2,9 +2,11 @@ var express=require("express");
 var router=express.Router();
 var mongo = require('mongodb');
 var request=require("request");
+var notificationUtils=require("../utils/notification");
 
 require("../utils/mongodb").then(db=>{
     const appointmentCollection=db.collection("appointments");
+    const hospitalAppointmentCollection=db.collection("hospital_appointments");
 
     router.get("/by-doctor/:doctor_uid", (req, res)=>{
         const uid=req.params.doctor_uid;
@@ -40,14 +42,31 @@ require("../utils/mongodb").then(db=>{
                 return;
             }
 
-            res.send({code:"success", data:docs});
+            const doctorAppointments=docs;
+
+            hospitalAppointmentCollection.find({user_uid:uid}).toArray((err, docs)=>{
+                if(err){
+                    res.send({code:"error", message:err.message});
+                    return;
+                }
+
+                let appointments=[];
+
+                appointments.push(...doctorAppointments);
+                appointments.push(...docs);
+
+                res.send({code:"success", data:appointments});
+
+            })
 
         })
 
     })
 
     router.post("/book", (req, res)=>{
-        const appointment=req.body;
+        let appointment=req.body;
+        appointment.is_confirmed=false;
+        appointment.is_complete=false;
 
         appointmentCollection.insertOne(appointment, (err, result)=>{
             if(err){
@@ -70,6 +89,27 @@ require("../utils/mongodb").then(db=>{
                 return
             }
 
+            appointmentCollection.findOne({_id:mongo.ObjectID(id)}, (err, result)=>{
+                if(err){
+                    console.log(err);
+                    return;
+                }
+
+                if(result){
+                    const payload={
+                        type:"appointment_cancelled",
+                        id:id
+                    };
+
+                    notificationUtils.sendNotificationByUid(result.user_uid, payload).then(()=>{
+                        console.log("Confirm appointment notification sent");
+                    }).catch(err=>{
+                        console.log(err);
+                    })
+                }
+
+            })
+
             res.send({code:"success"});
 
         })
@@ -85,6 +125,29 @@ require("../utils/mongodb").then(db=>{
                 res.send({code:"error", message:err.message});
                 return;
             }
+
+            appointmentCollection.aggregate({_id:mongo.ObjectID(id)}, (err, result)=>{
+                if(err){
+                    console.log(err);
+                    return;
+                }
+
+                if(result){
+                    const payload={
+                        type:"appointment_confirmed",
+                        id:id,
+                        message:"Your appointment is successfully confirmed",
+                        title:"Appointment confirmed"
+                    };
+
+                    notificationUtils.sendNotificationByUid(result.user_uid, payload).then(()=>{
+                        console.log("Confirm appointment notification sent");
+                    }).catch(err=>{
+                        console.log(err);
+                    })
+                }
+
+            })
 
             res.send({code:"success"});
 
@@ -109,13 +172,28 @@ require("../utils/mongodb").then(db=>{
     router.get("/user-pending/:uid", (req, res)=>{
         const uid=req.params.uid;
 
-        appointmentCollection.find({is_confirmed:false, user_uid:uid}).toArray((err, results)=>{
+        appointmentCollection.find({is_confirmed:false, user_uid:uid}).toArray((err, docs)=>{
             if(err){
                 res.send({code:"error", message:err.message});
                 return;
             }
 
-            res.send({code:"success", data:results});
+            const doctorAppointments=docs;
+
+            hospitalAppointmentCollection.find({is_confirmed:false, user_uid:uid}).toArray((err, docs)=>{
+                if(err){
+                    res.send({code:"error", message:err.message});
+                    return;
+                }
+
+                let appointments=[];
+
+                appointments.push(...doctorAppointments);
+                appointments.push(...docs);
+
+                res.send({code:"success", data:appointments});
+
+            })
 
         })
     });
@@ -137,14 +215,28 @@ require("../utils/mongodb").then(db=>{
     router.get("/user-confirmed/:uid", (req, res)=>{
         const uid=req.params.uid;
 
-        appointmentCollection.find({is_confirmed:true, is_complete:false, user_uid:uid}).toArray((err, results)=>{
+        appointmentCollection.find({is_confirmed:true, is_complete:false, user_uid:uid}).toArray((err, docs)=>{
             if(err){
                 res.send({code:"error", message:err.message});
                 return;
             }
 
-            res.send({code:"success", data:results});
+            const doctorAppointments=docs;
 
+            hospitalAppointmentCollection.find({is_confirmed:true, is_complete:false, user_uid:uid}).toArray((err, docs)=>{
+                if(err){
+                    res.send({code:"error", message:err.message});
+                    return;
+                }
+
+                let appointments=[];
+                
+                appointments.push(...doctorAppointments);
+                appointments.push(...docs);
+                
+                res.send({code:"success", data:appointments})
+
+            })
         })
     })
 
@@ -172,7 +264,22 @@ require("../utils/mongodb").then(db=>{
                 return;
             }
 
-            res.send({code:"success", data:results});
+            let doctorAppointments=results;
+
+            hospitalAppointmentCollection.find({is_complete:true, user_uid:uid}).toArray((err, docs)=>{
+                if(err){
+                    res.send({code:"error", message:err.message});
+                    return;
+                }
+
+                let appointments=[];
+
+                appointments.push(...doctorAppointments);
+                appointments.push(...docs);
+                
+                res.send({code:"success", data:appointments});
+
+            })
 
         })
     })
