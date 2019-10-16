@@ -44,6 +44,17 @@ router.get("/trasactions/:uid", (req, res)=>{
         res.send({code:"error", message:err.message});
     })
 
+});
+
+router.get("/:uid", (req, res)=>{
+    const uid=req.params.uid;
+
+    walletUtils.getWalletByUid(uid).then(wallet=>{
+        res.send({code:"success", data:wallet});
+    }).catch(err=>{
+        res.send({code:"error", message:err.message});
+    })
+
 })
 
 module.exports=router;

@@ -117,15 +117,15 @@ require("../utils/mongodb").then(db=>{
             })
 
             if(users>0){
-                res.send({code:"success", is_new:false});
+                res.send({code:"success", data:{is_new:false}});
             }else{
-                res.send({code:"success", is_new:true});
+                res.send({code:"success", data:{is_new:false}});
             }
         }).catch(err=>{
             res.send({code:"error", message:err.message});
         })
 
-    })
+    });
 
 }).catch(err=>{
     console.log(err);

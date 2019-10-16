@@ -139,4 +139,30 @@ require("./mongodb").then(db=>{
         })
     }
 
+    module.exports.getWalletByUid=(uid)=>{
+        return new Promise((resolve, reject)=>{
+            userCollection.findOne({uid:uid}, (err, doc)=>{
+                if(err){
+                    reject(err);
+                    return;
+                }
+
+                if(doc){
+                    walletCollection.findOne({_id:doc.wallet_id}, (err, doc)=>{
+                        if(err){
+                            reject(err);
+                            return;
+                        }
+
+                        resolve(doc);
+
+                    })
+                }else{
+                    reject(new Error("No such user exists"));
+                }
+
+            })
+        })
+    }
+
 });
